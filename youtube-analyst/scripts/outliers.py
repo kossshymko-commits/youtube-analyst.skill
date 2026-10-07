@@ -32,7 +32,7 @@ if c["published"]:
     d["published"] = pd.to_datetime(df[c["published"]], errors="coerce", dayfirst=True)
     days = (pd.Timestamp.now() - d["published"]).dt.days.clip(lower=1)
     d["views_per_day"] = (d["views"] / days).round(0)
-d = d.dropna(subset=["views"])
+d = d[df[c["title"]].notna().values].dropna(subset=["views"])
 
 grp = d.groupby(["channel", "format"])["views"]
 d["median"] = grp.transform("median")

@@ -25,6 +25,9 @@ c = {k: find_col(df, k) for k in ["title", "views", "published", "duration", "im
 if not c["title"] or not c["views"]:
     raise SystemExit(f"Не нашёл колонки названия/просмотров. Колонки файла: {list(df.columns)}")
 
+# убрать строку «Итого/Total» (в выгрузке Студии она первая, без названия)
+first = df.columns[0]
+df = df[df[c["title"]].notna() & ~df[first].astype("string").str.strip().str.lower().isin(["total", "итого"])]
 d = pd.DataFrame({"title": df[c["title"]].astype(str), "views": to_num(df[c["views"]])})
 for k in ["impressions", "ctr", "avg_view_pct", "subscribers"]:
     if c[k]:
@@ -42,6 +45,11 @@ if "dur_s" in d:
 missing = [k for k in ["impressions", "ctr", "avg_view_pct"] if k not in d]
 if missing:
     print("⚠ В выгрузке нет метрик:", ", ".join(missing), "— добавь их в таблицу Студии перед экспортом для полного диагноза.\n")
+
+tot_imp = d["impressions"].sum() if "impressions" in d else None
+if len(d) < 10 or (tot_imp is not None and tot_imp < 1000):
+    print(f"⚠ МАЛО ДАННЫХ: роликов {len(d)}, показов всего {tot_imp:.0f}. CTR и сравнения роликов — шум. "
+          "Главный вывод для такого канала: алгоритм ещё не раздаёт ролики; анализируй нишу и конкурентов, а не эту таблицу.\n")
 
 for fmt, g in d.groupby("формат"):
     g = g.copy()
